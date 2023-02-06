@@ -1,6 +1,14 @@
 import sys
 import re
 
+def check_args(args):
+    if '+' not in args and '-' not in args:
+        raise Exception('Algo de estranho aconteceu, confira a entrada') 
+    if args.replace(' ', '')[0] == '+' or args.replace(' ', '')[0] == '-':
+        raise Exception('Algo de estranho aconteceu, confira a entrada') 
+    else:
+        return
+
 def separa_string(sum_clear):
     split_numbers = re.split(r'[+-]', sum_clear)
     split_operations = []
@@ -25,5 +33,8 @@ def somador(sum):
 
     print(sum_result)
 
+
+
 if __name__ == "__main__":
+    check_args(sys.argv[1])
     somador(sys.argv[1])
