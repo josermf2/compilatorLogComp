@@ -1,5 +1,9 @@
 # Compilador - LogComp
 
+Diagrama Atual:
+
+<img src=Roteiro1.png>
+
 Desenvolvedor:
 - José Rafael Martins Fernandes
 
