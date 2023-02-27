@@ -9,8 +9,7 @@ class Token:
 class PrePro:
     @staticmethod
     def filter(source):
-        clear_spaces = re.sub(r'\s+', '', source) 
-        clear_comments = re.sub(r'#.*', '', clear_spaces)
+        clear_comments = re.sub(r'#.*', '', source)
         return clear_comments
 
 class Tokenizer:
@@ -21,6 +20,8 @@ class Tokenizer:
 
     def selectNext(self):
         original_size = len(self.source)
+        while self.position < original_size and self.source[self.position]==' ':
+            self.position += 1
         if self.position == original_size:
             self.next = Token('EOE', '')
         elif self.source[self.position].isdigit():
