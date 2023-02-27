@@ -75,7 +75,7 @@ class Parser:
         return result
     
     def parseExpression(self):
-        result = self.parseTerm()
+        result = self. parseTerm()
         while self.tokenizer.next.type == 'ADD' or self.tokenizer.next.type == 'SUB':
             if self.tokenizer.next.type == 'ADD':
                 self.tokenizer.selectNext()
