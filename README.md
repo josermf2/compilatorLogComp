@@ -2,7 +2,7 @@
 
 Diagrama Atual:
 
-<img src=Roteiro1.png>
+<img src=Roteiro2.png>
 
 Desenvolvedor:
 - José Rafael Martins Fernandes
