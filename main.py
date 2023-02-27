@@ -10,7 +10,10 @@ class PrePro:
     @staticmethod
     def filter(source):
         idx = source.find('#')
+        if idx == -1:
+            return source
         clear_comments = source[:idx]
+        print(clear_comments)
         return clear_comments
 
 class Tokenizer:
