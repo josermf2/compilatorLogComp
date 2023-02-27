@@ -9,7 +9,8 @@ class Token:
 class PrePro:
     @staticmethod
     def filter(source):
-        clear_comments = re.sub(r'#.*', '', source)
+        idx = source.find('#')
+        clear_comments = source[:idx]
         return clear_comments
 
 class Tokenizer:
