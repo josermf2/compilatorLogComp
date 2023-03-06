@@ -2,11 +2,13 @@
 
 Diagrama Atual:
 
-<img src=Roteiro2.png>
+<img src=Roteiro3.jpg>
 
 EBNF Atual:
 
-EXPRESSION = NUMBER, {("+" | "-" | "*" | "/"), NUMBER} ;
+EXPRESSION = TERM, { ("+" | "-"), TERM } ;
+TERM = FACTOR, { ("*" | "/"), FACTOR } ;
+FACTOR = ("+" | "-") FACTOR | "(" EXPRESSION ")" | number ;
 
 Desenvolvedor:
 - José Rafael Martins Fernandes
