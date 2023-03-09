@@ -6,9 +6,11 @@ Diagrama Atual:
 
 EBNF Atual:
 
-EXPRESSION = TERM, { ("+" | "-"), TERM } ;
-TERM = FACTOR, { ("*" | "/"), FACTOR } ;
-FACTOR = ("+" | "-") FACTOR | "(" EXPRESSION ")" | number ;
+* EXPRESSION = TERM, { ("+" | "-"), TERM } ;
+
+* TERM = FACTOR, { ("*" | "/"), FACTOR } ;
+
+* FACTOR = ("+" | "-") FACTOR | "(" EXPRESSION ")" | number ;
 
 Desenvolvedor:
 - José Rafael Martins Fernandes
