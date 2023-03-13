@@ -15,6 +15,52 @@ class PrePro:
         clear_comments = source[:idx]
         return clear_comments
 
+class Node:
+    def __init__(self, value):
+        self.value = value
+        self.children = []
+
+    def Evaluate():
+        pass 
+
+class UnOp(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        if self.value == '-':
+            return - self.children[0].Evaluate()
+        return self.children[0].Evaluate()
+
+class BinOp(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        if self.value == '+':
+            return self.children[0].Evaluate() + self.children[1].Evaluate()
+        elif self.value == '-':
+            return self.children[0].Evaluate() - self.children[1].Evaluate()
+        elif self.value == '*':
+            return self.children[0].Evaluate() * self.children[1].Evaluate()
+        elif self.value == '/':
+            return self.children[0].Evaluate() // self.children[1].Evaluate()
+        
+
+class IntVal(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def Evaluate(self):
+        return self.value
+
+
+class NoOp(Node):
+    def __init__(self, value):
+        self.value = value
+
 class Tokenizer:
     def __init__(self, source):
         self.source = source
@@ -63,13 +109,15 @@ class Parser:
         if self.tokenizer.next.type == 'INT':
             result = int(self.tokenizer.next.value)
             self.tokenizer.selectNext()
-            return result
+            return IntVal(result)
         elif self.tokenizer.next.type == 'ADD':
             self.tokenizer.selectNext()
-            return self.parseTerm()
+            result = self.parseFactor()
+            return UnOp('+', [result])
         elif self.tokenizer.next.type == 'SUB':
             self.tokenizer.selectNext()
-            return - self.parseTerm()
+            result = self.parseFactor()
+            return UnOp('-', [result])
         elif self.tokenizer.next.type == 'O_PAR':
             self.tokenizer.selectNext()
             result = self.parseExpression()
@@ -87,19 +135,19 @@ class Parser:
             if self.tokenizer.next.type == 'MUL':
                 self.tokenizer.selectNext()
                 if self.tokenizer.next.type == 'O_PAR':
-                    result *= self.parseFactor()
+                    result = BinOp('*', [result, self.parseFactor()])
                     continue
                 elif self.tokenizer.next.type == 'INT':
-                    result *= int(self.tokenizer.next.value)
+                    result = BinOp('*', [result, IntVal(int(self.tokenizer.next.value))])
                 else:
                     raise Exception('Algo de estranho aconteceu, confira a entrada')
             else:
                 self.tokenizer.selectNext()
                 if self.tokenizer.next.type == 'O_PAR':
-                    result = result // self.parseFactor()
+                    result = BinOp('/', [result, self.parseFactor()])
                     continue
                 elif self.tokenizer.next.type == 'INT':
-                    result = result // int(self.tokenizer.next.value)
+                    result = BinOp('/', [result, IntVal(int(self.tokenizer.next.value))])
                 else:
                     raise Exception('Algo de estranho aconteceu, confira a entrada')
         
@@ -111,10 +159,10 @@ class Parser:
         while self.tokenizer.next.type == 'ADD' or self.tokenizer.next.type == 'SUB':
             if self.tokenizer.next.type == 'ADD':
                 self.tokenizer.selectNext()
-                result += self.parseTerm()
+                result = BinOp('+', [result, self.parseTerm()])
             else:
                 self.tokenizer.selectNext()
-                result -= self.parseTerm()
+                result = BinOp('-', [result, self.parseTerm()])
         return result
     
     
@@ -123,9 +171,11 @@ class Parser:
         result = self.parseExpression()
         if self.tokenizer.next.type != 'EOE':
             raise Exception('Algo de estranho aconteceu, confira a entrada')
-        return result
+        return result.Evaluate()
         
 
 if __name__ == "__main__":
-    code = sys.argv[1]
+    filename = sys.argv[1]
+    with open(filename, 'r') as f:
+        code = f.read()
     print(Parser.run(Parser(PrePro.filter(code))))
