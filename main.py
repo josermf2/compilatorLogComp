@@ -1,5 +1,6 @@
 import sys
-import re
+
+reserved_words = ['println']
 
 class Token:
     def __init__(self, _type, value):
@@ -61,6 +62,50 @@ class NoOp(Node):
     def __init__(self, value):
         self.value = value
 
+class Print(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        print(self.children[0].Evaluate())
+    
+class Assign(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        SymbolTable.setter(self.children[0].value, self.children[1].Evaluate())
+
+class Identifier(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def Evaluate(self):
+        return SymbolTable.getter(self.value)
+    
+class Block(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        for child in self.children:
+            child.Evaluate()
+
+class SymbolTable:
+    def __init__(self):
+        self.table = {}
+
+    @staticmethod
+    def setter(self, key, value):
+        self.table[key] = value
+
+    @staticmethod
+    def getter(self, key):
+        return self.table[key]
+
 class Tokenizer:
     def __init__(self, source):
         self.source = source
@@ -97,13 +142,62 @@ class Tokenizer:
         elif self.position < original_size and self.source[self.position] == ')':
             self.next = Token('C_PAR', ')')
             self.position += 1
+        elif self.position < original_size and self.source[self.position].isalpha():
+            n = ''
+            while self.position < original_size and self.source[self.position].isalpha():
+                n = n + self.source[self.position]
+                self.position += 1
+            if n in reserved_words:
+                self.next = Token('RESERVED', n)
+            else:
+                self.next = Token('IDENTIFIER', n)
+        elif self.position < original_size and self.source[self.position] == '\n':
+            self.next = Token('NEW_LINE', '\n')
+            self.position += 1
+        elif self.position < original_size and self.source[self.position] == '=':
+            self.next = Token('ASSIGN', '=')
+            self.position += 1
         else:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return self.next   
+    
 
+
+ 
 class Parser:
     def __init__(self, source):
         self.tokenizer = Tokenizer(source)
+
+    def parseBlock(self):
+        result = []
+        while self.tokenizer.next.type != 'EOE':
+            result.append(self.parseStatement())
+        return Block('BLOCK', result)  
+    
+    def parseStatement(self):
+        if self.tokenizer.next.type == 'NEW_LINE':
+            self.tokenizer.selectNext()
+            return NoOp('NOOP')
+        elif self.tokenizer.next.type == 'IDENTIFIER':
+            identifier = self.tokenizer.next.value
+            self.tokenizer.selectNext()
+            if self.tokenizer.next.type == 'ASSIGN':
+                self.tokenizer.selectNext()
+                return Assign('ASSIGN', [Identifier(identifier), self.parseExpression()])
+            else:
+                raise Exception('Algo de estranho aconteceu, confira a entrada')
+        elif self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'println':
+            self.tokenizer.selectNext()
+            if self.tokenizer.next.type == 'O_PAR':
+                self.tokenizer.selectNext()
+                to_print = self.parseExpression()
+                if self.tokenizer.next.type == 'C_PAR':
+                    self.tokenizer.selectNext()
+                    return Print('PRINT', [to_print]) 
+                else:
+                    raise Exception('Algo de estranho aconteceu, confira a entrada')
+        else:
+            raise Exception('Algo de estranho aconteceu, confira a entrada')
 
     def parseFactor(self):
         if self.tokenizer.next.type == 'INT':
@@ -126,6 +220,10 @@ class Parser:
                 return result
             else:
                 raise Exception('Algo de estranho aconteceu, confira a entrada')
+        elif self.tokenizer.next.type == 'IDENTIFIER':
+            result = self.tokenizer.next.value
+            self.tokenizer.selectNext()
+            return Identifier(result)
         else:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
 
@@ -168,7 +266,7 @@ class Parser:
     
     @staticmethod
     def run(self):
-        result = self.parseExpression()
+        result = self.parseBlock()
         if self.tokenizer.next.type != 'EOE':
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return result.Evaluate()
@@ -178,4 +276,4 @@ if __name__ == "__main__":
     filename = sys.argv[1]
     with open(filename, 'r') as f:
         code = f.read()
-    print(Parser.run(Parser(PrePro.filter(code))))
+    Parser.run(Parser(PrePro.filter(code)))
