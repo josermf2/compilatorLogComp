@@ -10,11 +10,13 @@ class Token:
 class PrePro:
     @staticmethod
     def filter(source):
-        idx = source.find('#')
-        if idx == -1:
+        if "#" not in source:
             return source
-        clear_comments = source[:idx]
-        return clear_comments
+        index = source.index('\n', source.index("#"))
+        for i in range(len(source)):
+            if source[i] == '#':
+                source = source[:i] + source[index:]
+                return source
 
 class Node:
     def __init__(self, value):
@@ -59,9 +61,12 @@ class IntVal(Node):
 
 
 class NoOp(Node):
-    def __init__(self, value):
-        self.value = value
+    def __init__(self):
+        self.value = 'NOOP'
 
+    def Evaluate(self):
+        return 
+    
 class Print(Node):
     def __init__(self, value, children):
         self.value = value
@@ -76,14 +81,15 @@ class Assign(Node):
         self.children = children
 
     def Evaluate(self):
-        SymbolTable.setter(self.children[0].value, self.children[1].Evaluate())
+        x, y = self.children[0].value, self.children[1].Evaluate()
+        symboltable.set(x, y)
 
 class Identifier(Node):
     def __init__(self, value):
         self.value = value
 
     def Evaluate(self):
-        return SymbolTable.getter(self.value)
+        return symboltable.get(self.value)
     
 class Block(Node):
     def __init__(self, value, children):
@@ -98,12 +104,10 @@ class SymbolTable:
     def __init__(self):
         self.table = {}
 
-    @staticmethod
-    def setter(self, key, value):
+    def set(self, key, value):
         self.table[key] = value
 
-    @staticmethod
-    def getter(self, key):
+    def get(self, key):
         return self.table[key]
 
 class Tokenizer:
@@ -142,9 +146,9 @@ class Tokenizer:
         elif self.position < original_size and self.source[self.position] == ')':
             self.next = Token('C_PAR', ')')
             self.position += 1
-        elif self.position < original_size and self.source[self.position].isalpha():
+        elif self.position < original_size and (self.source[self.position].isalnum() or self.source[self.position] == '_'):
             n = ''
-            while self.position < original_size and self.source[self.position].isalpha():
+            while self.position < original_size and (self.source[self.position].isalnum() or self.source[self.position] == '_'):
                 n = n + self.source[self.position]
                 self.position += 1
             if n in reserved_words:
@@ -160,9 +164,6 @@ class Tokenizer:
         else:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return self.next   
-    
-
-
  
 class Parser:
     def __init__(self, source):
@@ -177,7 +178,7 @@ class Parser:
     def parseStatement(self):
         if self.tokenizer.next.type == 'NEW_LINE':
             self.tokenizer.selectNext()
-            return NoOp('NOOP')
+            return NoOp()
         elif self.tokenizer.next.type == 'IDENTIFIER':
             identifier = self.tokenizer.next.value
             self.tokenizer.selectNext()
@@ -271,6 +272,8 @@ class Parser:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return result.Evaluate()
         
+global symboltable
+symboltable = SymbolTable()
 
 if __name__ == "__main__":
     filename = sys.argv[1]
