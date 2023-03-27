@@ -10,13 +10,15 @@ class Token:
 class PrePro:
     @staticmethod
     def filter(source):
-        if "#" not in source:
+        if '#' not in source:
             return source
-        index = source.index('\n', source.index("#"))
-        for i in range(len(source)):
-            if source[i] == '#':
-                source = source[:i] + source[index:]
-                return source
+        lines = source.split('\n')
+        for i in range(len(lines)):
+            for j in range(len(lines[i])):
+                if lines[i][j] == '#':
+                    lines[i] = lines[i][:j]
+                    break
+        return '\n'.join(lines)
 
 class Node:
     def __init__(self, value):
