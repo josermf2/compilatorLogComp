@@ -1,6 +1,6 @@
 import sys
 
-reserved_words = ['println', 'while', 'if', 'end', 'readline']
+reserved_words = ['println', 'while', 'if', 'end', 'readline', 'else']
 
 class Token:
     def __init__(self, _type, value):
@@ -266,7 +266,7 @@ class Parser:
                     raise Exception('Algo de estranho aconteceu, confira a entrada')
         elif self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'while':
             self.tokenizer.selectNext()
-            condition = self.parserRelExpr()   
+            condition = self.parseRelExpr()   
             if self.tokenizer.next.type == 'NEW_LINE':
                 self.tokenizer.selectNext()
                 body = Block('BLOCK', [])
@@ -322,7 +322,7 @@ class Parser:
             return UnOp('!', [result])
         elif self.tokenizer.next.type == 'O_PAR':
             self.tokenizer.selectNext()
-            result = self.parserRelExpr()
+            result = self.parseRelExpr()
             if self.tokenizer.next.type == 'C_PAR':
                 self.tokenizer.selectNext()
                 return result
