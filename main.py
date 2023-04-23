@@ -207,8 +207,6 @@ class Tokenizer:
             else:
                 self.next = Token('ASSIGN', '=')
                 self.position += 1
-            self.next = Token('ASSIGN', '=')
-            self.position += 1
         elif self.position < original_size and self.source[self.position] == '>':
             self.next = Token('GREATER', '>')
             self.position += 1
@@ -279,8 +277,7 @@ class Parser:
                     return While('WHILE', [condition, body])
         elif self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'if':
             self.tokenizer.selectNext()
-            condition = self.parserRelExpr()
-
+            condition = self.parseRelExpr()
             if self.tokenizer.next.type == 'NEW_LINE':
                 self.tokenizer.selectNext()
                 body = Block('BLOCK', [])
@@ -391,7 +388,7 @@ class Parser:
                 result = BinOp('||', [result, self.parseTerm()])
         return result
     
-    def parserRelExpr(self):
+    def parseRelExpr(self):
         result = self.parseExpression()
         while self.tokenizer.next.type == 'EQUAL' or self.tokenizer.next.type == 'GREATER' or self.tokenizer.next.type == 'LESS':
             if self.tokenizer.next.type == 'EQUAL':
