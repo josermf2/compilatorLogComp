@@ -138,7 +138,7 @@ class Readline(Node):
     def __init__(self):
         pass
 
-    def evaluate(self):
+    def Evaluate(self):
         return int(input())
 
 
