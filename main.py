@@ -35,10 +35,10 @@ class UnOp(Node):
 
     def Evaluate(self):
         if self.value == '-':
-            return - self.children[0].Evaluate()
+            return ["Int", - self.children[0].Evaluate()[1]]
         if self.value == '!':
-            return not self.children[0].Evaluate()
-        return ["Int", self.children[0].Evaluate()]
+            return ["Int", not self.children[0].Evaluate()[1]]
+        return ["Int", self.children[0].Evaluate()[1]]
 
 class BinOp(Node):
     def __init__(self, value, children):
@@ -47,25 +47,25 @@ class BinOp(Node):
 
     def Evaluate(self):
         if self.value == '+':
-            return ["Int", self.children[0].Evaluate() + self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] + self.children[1].Evaluate()[1]]
         elif self.value == '-':
-            return ["Int", self.children[0].Evaluate() - self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] - self.children[1].Evaluate()[1]]
         elif self.value == '*':
-            return ["Int", self.children[0].Evaluate() * self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] * self.children[1].Evaluate()[1]]
         elif self.value == '/':
-            return ["Int", self.children[0].Evaluate() // self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] // self.children[1].Evaluate()[1]]
         elif self.value == '==':
-            return ["Int", self.children[0].Evaluate() == self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] == self.children[1].Evaluate()[1]]
         elif self.value == '<':
-            return ["Int", self.children[0].Evaluate() < self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] < self.children[1].Evaluate()[1]]
         elif self.value == '>':
-            return ["Int", self.children[0].Evaluate() > self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] > self.children[1].Evaluate()[1]]
         elif self.value == '&&':
-            return ["Int", self.children[0].Evaluate() and self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] and self.children[1].Evaluate()[1]]
         elif self.value == '||':
-            return ["Int", self.children[0].Evaluate() or self.children[1].Evaluate()]
+            return ["Int", self.children[0].Evaluate()[1] or self.children[1].Evaluate()[1]]
         elif self.value == '.':
-            return ["String", self.children[0].Evaluate() + self.children[1].Evaluate()]
+            return ["String", self.children[0].Evaluate()[1] + self.children[1].Evaluate()[1]]
         
 
 class IntVal(Node):
@@ -109,7 +109,7 @@ class Print(Node):
         self.children = children
 
     def Evaluate(self):
-        print(self.children[0].Evaluate())
+        print(self.children[0].Evaluate()[1])
     
 class Assign(Node):
     def __init__(self, value, children):
@@ -142,7 +142,7 @@ class While(Node):
         self.children = children
     
     def Evaluate(self):
-        while self.children[0].Evaluate():
+        while self.children[0].Evaluate()[1]:
             self.children[1].Evaluate()
 
 class If(Node):
@@ -151,7 +151,7 @@ class If(Node):
         self.children = children
     
     def Evaluate(self):
-        if self.children[0].Evaluate():
+        if self.children[0].Evaluate()[1]:
             self.children[1].Evaluate()
         elif len(self.children) == 3:
             self.children[2].Evaluate()
@@ -161,7 +161,7 @@ class Readline(Node):
         pass
 
     def Evaluate(self):
-        return int(input())
+        return ['Int', int(input())]
 
 
 class SymbolTable:
