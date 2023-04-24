@@ -1,6 +1,6 @@
 import sys
 
-reserved_words = ['println', 'while', 'if', 'end', 'readline', 'else']
+reserved_words = ['println', 'while', 'if', 'end', 'readline', 'else', 'Int', 'String']
 
 class Token:
     def __init__(self, _type, value):
@@ -38,7 +38,7 @@ class UnOp(Node):
             return - self.children[0].Evaluate()
         if self.value == '!':
             return not self.children[0].Evaluate()
-        return self.children[0].Evaluate()
+        return ["Int", self.children[0].Evaluate()]
 
 class BinOp(Node):
     def __init__(self, value, children):
@@ -47,23 +47,25 @@ class BinOp(Node):
 
     def Evaluate(self):
         if self.value == '+':
-            return self.children[0].Evaluate() + self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() + self.children[1].Evaluate()]
         elif self.value == '-':
-            return self.children[0].Evaluate() - self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() - self.children[1].Evaluate()]
         elif self.value == '*':
-            return self.children[0].Evaluate() * self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() * self.children[1].Evaluate()]
         elif self.value == '/':
-            return self.children[0].Evaluate() // self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() // self.children[1].Evaluate()]
         elif self.value == '==':
-            return self.children[0].Evaluate() == self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() == self.children[1].Evaluate()]
         elif self.value == '<':
-            return self.children[0].Evaluate() < self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() < self.children[1].Evaluate()]
         elif self.value == '>':
-            return self.children[0].Evaluate() > self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() > self.children[1].Evaluate()]
         elif self.value == '&&':
-            return self.children[0].Evaluate() and self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() and self.children[1].Evaluate()]
         elif self.value == '||':
-            return self.children[0].Evaluate() or self.children[1].Evaluate()
+            return ["Int", self.children[0].Evaluate() or self.children[1].Evaluate()]
+        elif self.value == '.':
+            return ["String", self.children[0].Evaluate() + self.children[1].Evaluate()]
         
 
 class IntVal(Node):
@@ -71,7 +73,27 @@ class IntVal(Node):
         self.value = value
 
     def Evaluate(self):
-        return self.value
+        return ["Int", self.value]
+
+class StrVal(Node):
+    def __init__(self, value):
+        self.value = value
+
+    def Evaluate(self):
+        return ["String", self.value]
+
+class VarDec(Node):
+    def __init__(self, value, children):
+        self.value = value
+        self.children = children
+
+    def Evaluate(self):
+        key = self.children[0].value
+        if self.children[1] == 0 or self.children[1] == '' :
+            y = self.children[1]
+        else:
+            y = self.children[1].Evaluate()
+        symboltable.create(key, self.value, y)
 
 
 class NoOp(Node):
@@ -147,10 +169,18 @@ class SymbolTable:
         self.table = {}
 
     def set(self, key, value):
-        self.table[key] = value
+        if key not in self.table:
+            raise Exception('Variable does not exist')
+        self.table[key][1] = value
 
     def get(self, key):
-        return self.table[key]
+        return self.table[key][1]
+    
+    def create(self, key, _type, value):
+        if key in self.table:
+            raise Exception('Variable already exists')
+        else:
+            self.table[key] = [_type, value]
 
 class Tokenizer:
     def __init__(self, source):
@@ -173,6 +203,14 @@ class Tokenizer:
         elif self.position < original_size and self.source[self.position] == '-':
             self.next = Token('SUB', '-')
             self.position += 1
+        elif self.position < original_size and self.source[self.position] == '"':
+            string = ''
+            self.position += 1
+            while self.position < original_size and self.source[self.position] != '"':
+                string += self.source[self.position]
+                self.position += 1
+            self.position += 1
+            self.next = Token('STRING', string)
         elif self.position < original_size and self.source[self.position] == '+':
             self.next = Token('ADD', '+')
             self.position += 1
@@ -194,7 +232,10 @@ class Tokenizer:
                 n = n + self.source[self.position]
                 self.position += 1
             if n in reserved_words:
-                self.next = Token('RESERVED', n)
+                if n == 'Int' or n == 'String':
+                    self.next = Token('TYPE', n)
+                else:
+                    self.next = Token('RESERVED', n)
             else:
                 self.next = Token('IDENTIFIER', n)
         elif self.position < original_size and self.source[self.position] == '\n':
@@ -228,6 +269,15 @@ class Tokenizer:
                 self.position += 2
             else:
                 raise Exception('Algo de estranho aconteceu, confira a entrada')
+        elif self.position < original_size and self.source[self.position] == ':':
+            if self.position + 1 < original_size and self.source[self.position+1] == ':':
+                self.next = Token('DC', '::')
+                self.position += 2
+            else:
+                raise Exception('Algo de estranho aconteceu, confira a entrada')
+        elif self.position < original_size and self.source[self.position] == '.':
+            self.next = Token('CONCAT', '.')
+            self.position += 1
         else:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return self.next   
@@ -251,9 +301,25 @@ class Parser:
             self.tokenizer.selectNext()
             if self.tokenizer.next.type == 'ASSIGN':
                 self.tokenizer.selectNext()
-                return Assign('ASSIGN', [Identifier(identifier), self.parseExpression()])
+                return Assign('ASSIGN', [Identifier(identifier), self.parseRelExpr()])
+            elif self.tokenizer.next.type == 'DC':
+                self.tokenizer.selectNext()
+                if self.tokenizer.next.type == 'TYPE':
+                    _type = self.tokenizer.next.value
+                    self.tokenizer.selectNext()
+                    if self.tokenizer.next.type == 'ASSIGN':
+                        self.tokenizer.selectNext()
+                        return VarDec(_type, [Identifier(identifier), self.parseRelExpr()])
+                    else:
+                        self.tokenizer.selectNext()
+                        if _type == 'Int':    
+                            y = 0
+                        elif _type == 'String':
+                            y = ''
+                        return VarDec(_type, [Identifier(identifier), y])
             else:
                 raise Exception('Algo de estranho aconteceu, confira a entrada')
+            
         elif self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'println':
             self.tokenizer.selectNext()
             if self.tokenizer.next.type == 'O_PAR':
@@ -308,6 +374,10 @@ class Parser:
             result = int(self.tokenizer.next.value)
             self.tokenizer.selectNext()
             return IntVal(result)
+        elif self.tokenizer.next.type == 'STRING':
+            result = self.tokenizer.next.value
+            self.tokenizer.selectNext()
+            return StrVal(result)
         elif self.tokenizer.next.type == 'ADD':
             self.tokenizer.selectNext()
             result = self.parseFactor()
@@ -376,7 +446,7 @@ class Parser:
     
     def parseExpression(self):
         result = self.parseTerm()
-        while self.tokenizer.next.type == 'ADD' or self.tokenizer.next.type == 'SUB' or self.tokenizer.next.type == 'OR':
+        while self.tokenizer.next.type == 'ADD' or self.tokenizer.next.type == 'SUB' or self.tokenizer.next.type == 'OR' or self.tokenizer.next.type == 'CONCAT':
             if self.tokenizer.next.type == 'ADD':
                 self.tokenizer.selectNext()
                 result = BinOp('+', [result, self.parseTerm()])
@@ -386,6 +456,9 @@ class Parser:
             elif self.tokenizer.next.type == 'OR':
                 self.tokenizer.selectNext()
                 result = BinOp('||', [result, self.parseTerm()])
+            elif self.tokenizer.next.type == 'CONCAT':
+                self.tokenizer.selectNext()
+                result = BinOp('.', [result, self.parseTerm()])
         return result
     
     def parseRelExpr(self):
