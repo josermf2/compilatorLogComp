@@ -46,26 +46,72 @@ class BinOp(Node):
         self.children = children
 
     def Evaluate(self):
-        if self.value == '+':
-            return ["Int", self.children[0].Evaluate()[1] + self.children[1].Evaluate()[1]]
-        elif self.value == '-':
-            return ["Int", self.children[0].Evaluate()[1] - self.children[1].Evaluate()[1]]
-        elif self.value == '*':
-            return ["Int", self.children[0].Evaluate()[1] * self.children[1].Evaluate()[1]]
-        elif self.value == '/':
-            return ["Int", self.children[0].Evaluate()[1] // self.children[1].Evaluate()[1]]
-        elif self.value == '==':
-            return ["Int", self.children[0].Evaluate()[1] == self.children[1].Evaluate()[1]]
-        elif self.value == '<':
-            return ["Int", self.children[0].Evaluate()[1] < self.children[1].Evaluate()[1]]
-        elif self.value == '>':
-            return ["Int", self.children[0].Evaluate()[1] > self.children[1].Evaluate()[1]]
-        elif self.value == '&&':
-            return ["Int", self.children[0].Evaluate()[1] and self.children[1].Evaluate()[1]]
-        elif self.value == '||':
-            return ["Int", self.children[0].Evaluate()[1] or self.children[1].Evaluate()[1]]
-        elif self.value == '.':
-            return ["String", self.children[0].Evaluate()[1] + self.children[1].Evaluate()[1]]
+        esq_op = self.children[0].Evaluate()
+        dir_op = self.children[1].Evaluate()
+        if esq_op[0] == "String" or dir_op[0] == "String":
+            if self.value == '.':        
+                return ["String", str(esq_op[1]) + str(dir_op[1])]
+            elif self.value == '==':
+                if esq_op[1] == dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]            
+            elif self.value == '<':
+                if esq_op[1] < dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '>':
+                if esq_op[1] > dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '&&':
+                if esq_op[1] and dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '||':
+                if esq_op[1] or dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+        else:
+            if self.value == '.':        
+                return ["String", str(esq_op[1]) + str(dir_op[1])]
+            if self.value == '+':
+                return ["Int", esq_op[1] + dir_op[1]]
+            elif self.value == '-':
+                return ["Int", esq_op[1] - dir_op[1]]
+            elif self.value == '*':
+                return ["Int", esq_op[1] * dir_op[1]]
+            elif self.value == '/':
+                return ["Int", esq_op[1] // dir_op[1]]
+            elif self.value == '==':
+                if esq_op[1] == dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]            
+            elif self.value == '<':
+                if esq_op[1] < dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '>':
+                if esq_op[1] > dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '&&':
+                if esq_op[1] and dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
+            elif self.value == '||':
+                if esq_op[1] or dir_op[1]:
+                    return ["Int", 1]
+                else:
+                    return ["Int", 0]
         
 
 class IntVal(Node):
@@ -171,10 +217,17 @@ class SymbolTable:
     def set(self, key, value):
         if key not in self.table:
             raise Exception('Variable does not exist')
-        self.table[key][1] = value
+        else:
+            if self.table[key][0] == value[0]:
+                self.table[key][1] = value
+            else:
+                raise Exception('Type mismatch')
 
     def get(self, key):
         return self.table[key][1]
+    
+    def get_type(self, key):
+        return self.table[key][0]
     
     def create(self, key, _type, value):
         if key in self.table:
@@ -324,7 +377,7 @@ class Parser:
             self.tokenizer.selectNext()
             if self.tokenizer.next.type == 'O_PAR':
                 self.tokenizer.selectNext()
-                to_print = self.parseExpression()
+                to_print = self.parseRelExpr()
                 if self.tokenizer.next.type == 'C_PAR':
                     self.tokenizer.selectNext()
                     return Print('PRINT', [to_print]) 
@@ -421,27 +474,13 @@ class Parser:
         while self.tokenizer.next.type == 'MUL' or self.tokenizer.next.type == 'DIV' or self.tokenizer.next.type == 'AND':
             if self.tokenizer.next.type == 'MUL':
                 self.tokenizer.selectNext()
-                if self.tokenizer.next.type == 'O_PAR':
-                    result = BinOp('*', [result, self.parseFactor()])
-                    continue
-                elif self.tokenizer.next.type == 'INT':
-                    result = BinOp('*', [result, IntVal(int(self.tokenizer.next.value))])
-                else:
-                    raise Exception('Algo de estranho aconteceu, confira a entrada')
+                result = BinOp('*', [result, self.parseFactor()])
             elif self.tokenizer.next.type == 'DIV':
                 self.tokenizer.selectNext()
-                if self.tokenizer.next.type == 'O_PAR':
-                    result = BinOp('/', [result, self.parseFactor()])
-                    continue
-                elif self.tokenizer.next.type == 'INT':
-                    result = BinOp('/', [result, IntVal(int(self.tokenizer.next.value))])
-                else:
-                    raise Exception('Algo de estranho aconteceu, confira a entrada')
+                result = BinOp('/', [result, self.parseFactor()])
             elif self.tokenizer.next.type == 'AND':
                 self.tokenizer.selectNext()
                 result = BinOp('&&', [result, self.parseFactor()])
-                return result
-            self.tokenizer.selectNext()
         return result
     
     def parseExpression(self):
