@@ -400,8 +400,17 @@ class Parser:
             if self.tokenizer.next.type == 'NEW_LINE':
                 self.tokenizer.selectNext()
                 body = Block('BLOCK', [])
-                while self.tokenizer.next.value != 'end' and self.tokenizer.next.value != 'else':
+                newline = False
+                control = True
+                while control:
+                    if self.tokenizer.next.type == 'NEW_LINE':
+                        newline = True
+                        self.tokenizer.selectNext()
+                    if newline and (self.tokenizer.next.value == 'end' or self.tokenizer.next.value == 'else'):
+                            control = False
                     body.children.append(self.parseStatement())
+
+                
                 if self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'else':
                     self.tokenizer.selectNext()
                     if self.tokenizer.next.type == 'NEW_LINE':
