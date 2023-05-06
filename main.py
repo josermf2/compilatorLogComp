@@ -408,7 +408,8 @@ class Parser:
                         self.tokenizer.selectNext()
                     if newline and (self.tokenizer.next.value == 'end' or self.tokenizer.next.value == 'else'):
                             control = False
-                    body.children.append(self.parseStatement())
+                    if control:
+                        body.children.append(self.parseStatement())
 
                 
                 if self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'else':
