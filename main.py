@@ -2,10 +2,21 @@ import sys
 
 reserved_words = ['println', 'while', 'if', 'end', 'readline', 'else', 'Int', 'String']
 
+global symboltable
+global asmFile 
+
 class Token:
     def __init__(self, _type, value):
         self.type = _type
         self.value = value
+
+#class WriteFile:
+#    def __init__(self, file_name):
+#        self.file_name = file_name
+#
+#    def write(self, source):
+#        with open(self.file_name, 'w') as f:
+#            f.write(source)
 
 class PrePro:
     @staticmethod
@@ -21,9 +32,17 @@ class PrePro:
         return '\n'.join(lines)
 
 class Node:
+    i = 0
+    
     def __init__(self, value):
         self.value = value
         self.children = []
+        self.i = Node.newId()
+
+    @staticmethod
+    def newId():
+        Node.i += 1
+        return Node.i
 
     def Evaluate():
         pass 
@@ -32,106 +51,88 @@ class UnOp(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
+        x = self.children[0].Evaluate()[1]
+
         if self.value == '-':
-            return ["Int", - self.children[0].Evaluate()[1]]
+            asmFile.write("  NEG EBX\n")
+
         if self.value == '!':
-            return ["Int", not self.children[0].Evaluate()[1]]
-        return ["Int", self.children[0].Evaluate()[1]]
+            asmFile.write("  NOT EBX\n")
+       
 
 class BinOp(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
-        esq_op = self.children[0].Evaluate()
-        dir_op = self.children[1].Evaluate()
-        if esq_op[0] == "String" or dir_op[0] == "String":
-            if self.value == '.':        
-                return ["String", str(esq_op[1]) + str(dir_op[1])]
-            elif self.value == '==':
-                if esq_op[1] == dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]            
-            elif self.value == '<':
-                if esq_op[1] < dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '>':
-                if esq_op[1] > dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '&&':
-                if esq_op[1] and dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '||':
-                if esq_op[1] or dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-        else:
-            if self.value == '.':        
-                return ["String", str(esq_op[1]) + str(dir_op[1])]
-            if self.value == '+':
-                return ["Int", esq_op[1] + dir_op[1]]
-            elif self.value == '-':
-                return ["Int", esq_op[1] - dir_op[1]]
-            elif self.value == '*':
-                return ["Int", esq_op[1] * dir_op[1]]
-            elif self.value == '/':
-                return ["Int", esq_op[1] // dir_op[1]]
-            elif self.value == '==':
-                if esq_op[1] == dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]            
-            elif self.value == '<':
-                if esq_op[1] < dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '>':
-                if esq_op[1] > dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '&&':
-                if esq_op[1] and dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-            elif self.value == '||':
-                if esq_op[1] or dir_op[1]:
-                    return ["Int", 1]
-                else:
-                    return ["Int", 0]
-        
 
+        esq_op = self.children[0].Evaluate()
+        asmFile.write("  PUSH EBX\n")
+        dir_op = self.children[1].Evaluate()
+        asmFile.write("  POP EAX\n")
+
+        if self.value == '+':
+            asmFile.write("  ADD EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+             
+        elif self.value == '-':
+            asmFile.write("  SUB EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+             
+        elif self.value == '*':
+            asmFile.write("  IMUL EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+             
+        elif self.value == '/':
+            asmFile.write("  IDIV EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+             
+        elif self.value == '==':
+            asmFile.write("  CMP EAX, EBX\n")
+            asmFile.write("  CALL binop_je\n")
+                         
+        elif self.value == '<':
+            asmFile.write("  CMP EAX, EBX\n")
+            asmFile.write("  CALL binop_jl\n")
+             
+        elif self.value == '>':
+            asmFile.write("  CMP EAX, EBX\n")
+            asmFile.write("  CALL binop_jg\n")
+             
+        elif self.value == '&&':
+            asmFile.write("  AND EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+
+        elif self.value == '||':
+            asmFile.write("  OR EAX, EBX\n")
+            asmFile.write("  MOV EBX, EAX\n")
+        
 class IntVal(Node):
     def __init__(self, value):
         self.value = value
+        self.i = Node.newId()
 
     def Evaluate(self):
-        return ["Int", self.value]
+        asmFile.write(f"  MOV EBX, {self.value}\n")
 
 class StrVal(Node):
     def __init__(self, value):
         self.value = value
+        self.i = Node.newId()
 
     def Evaluate(self):
-        return ["String", self.value]
+        return 
 
 class VarDec(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
         key = self.children[0].value
@@ -140,11 +141,13 @@ class VarDec(Node):
         else:
             y = self.children[1].Evaluate()
         symboltable.create(key, self.value, y)
+        asmFile.write("  PUSH DWORD 0\n")
 
 
 class NoOp(Node):
     def __init__(self):
         self.value = 'NOOP'
+        self.i = Node.newId()
 
     def Evaluate(self):
         return 
@@ -153,30 +156,40 @@ class Print(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
-        print(self.children[0].Evaluate()[1])
+        self.children[0].Evaluate()
+        asmFile.write("  PUSH EBX\n")
+        asmFile.write("  CALL print\n")
+        asmFile.write("  POP EBX\n")
     
 class Assign(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
         x, y = self.children[0].value, self.children[1].Evaluate()
-        symboltable.set(x, y)
+        value = symboltable.get(x)
+        asmFile.write(f"  MOV [{value}], EBX\n")
+
 
 class Identifier(Node):
     def __init__(self, value):
         self.value = value
+        self.i = Node.newId()
 
     def Evaluate(self):
-        return symboltable.get(self.value)
+        value = symboltable.get(self.value)
+        asmFile.write(f"  MOV EBX, [{value}]\n")
     
 class Block(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
+        self.i = Node.newId()
 
     def Evaluate(self):
         for child in self.children:
@@ -186,33 +199,51 @@ class While(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
-    
+        self.i = Node.newId()
+
     def Evaluate(self):
-        while self.children[0].Evaluate()[1]:
-            self.children[1].Evaluate()
+        asmFile.write(f"  Loop{self.i}:\n")
+        self.children[0].Evaluate()
+        asmFile.write("  CMP EBX, False\n")
+        asmFile.write(f"  JE exit{self.i}\n")
+        self.children[1].Evaluate()
+        asmFile.write(f"  JMP Loop{self.i}\n")
+        asmFile.write(f"  exit{self.i}:\n")
+        
 
 class If(Node):
     def __init__(self, value, children):
         self.value = value
         self.children = children
-    
+        self.i = Node.newId()
+
     def Evaluate(self):
-        if self.children[0].Evaluate()[1]:
-            self.children[1].Evaluate()
-        elif len(self.children) == 3:
+        self.children[0].Evaluate()
+        asmFile.write("  CMP EBX, True\n")
+        asmFile.write(f"  JE IF{self.i}\n")
+        if len(self.children) > 2:
             self.children[2].Evaluate()
+            asmFile.write(f"  JMP ENDIF{self.i}\n")
+        else:
+            asmFile.write(f"  JMP ENDIF{self.i}\n")
+
+        asmFile.write(f"  IF{self.i}:\n")
+        self.children[1].Evaluate()
+        asmFile.write(f"  ENDIF{self.i}:\n")
+
 
 class Readline(Node):
     def __init__(self):
         pass
 
     def Evaluate(self):
-        return ['Int', int(input())]
+        return 
 
 
 class SymbolTable:
     def __init__(self):
         self.table = {}
+        self.id = -4
 
     def set(self, key, value):
         if key not in self.table:
@@ -233,7 +264,8 @@ class SymbolTable:
         if key in self.table:
             raise Exception('Variable already exists')
         else:
-            self.table[key] = [_type, value]
+            self.table[key] = [_type, f"EBP{self.id}"]
+        self.id -= 4        
 
 class Tokenizer:
     def __init__(self, source):
@@ -410,7 +442,6 @@ class Parser:
                             control = False
                     if control:
                         body.children.append(self.parseStatement())
-
                 
                 if self.tokenizer.next.type == 'RESERVED' and self.tokenizer.next.value == 'else':
                     self.tokenizer.selectNext()
@@ -531,11 +562,23 @@ class Parser:
             raise Exception('Algo de estranho aconteceu, confira a entrada')
         return result.Evaluate()
         
-global symboltable
+
 symboltable = SymbolTable()
+
 
 if __name__ == "__main__":
     filename = sys.argv[1]
+    asmFile = open(filename.split('.')[0]+'.asm', 'w')
+
     with open(filename, 'r') as f:
         code = f.read()
+
+    with open('cabecalho.asm', 'r') as f:
+        asmFile.write(f.read())
+    
     Parser.run(Parser(PrePro.filter(code)))
+
+    with open('rodape.asm', 'r') as f:
+        asmFile.write(f.read())
+    
+    asmFile.close()
